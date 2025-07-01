@@ -8,6 +8,9 @@ import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import Layout from "@/components/Layout/Layout";
 import Login from "@/components/Login";
 import Dashboard from "@/pages/Dashboard";
+import Income from "@/pages/Income";
+import Expenses from "@/pages/Expenses";
+import Transactions from "@/pages/Transactions";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -23,10 +26,10 @@ const AppContent = () => {
     <Layout>
       <Routes>
         <Route path="/" element={<Dashboard />} />
-        <Route path="/income" element={<div className="text-center p-8">Income Tracking Page - Coming Soon</div>} />
-        <Route path="/expenses" element={<div className="text-center p-8">Expense Tracking Page - Coming Soon</div>} />
+        <Route path="/income" element={<Income />} />
+        <Route path="/expenses" element={<Expenses />} />
         <Route path="/reports" element={<div className="text-center p-8">Financial Reports Page - Coming Soon</div>} />
-        <Route path="/transactions" element={<div className="text-center p-8">All Transactions Page - Coming Soon</div>} />
+        <Route path="/transactions" element={<Transactions />} />
         <Route path="/categories" element={<div className="text-center p-8">Manage Categories Page - Coming Soon</div>} />
         <Route path="/settings" element={<div className="text-center p-8">System Settings Page - Coming Soon</div>} />
         <Route path="*" element={<NotFound />} />

@@ -1,82 +1,67 @@
 
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { useNavigate } from 'react-router-dom';
 import MetricCard from '@/components/Charts/MetricCard';
 import { DashboardMetrics, Transaction } from '@/types';
+import { transactionService } from '@/services/transactionService';
 
 const Dashboard: React.FC = () => {
-  const [metrics, setMetrics] = useState<DashboardMetrics>({
-    todayIncome: [
-      { currency: 'EGP', amount: 15420 },
-      { currency: 'USD', amount: 485 },
-      { currency: 'EUR', amount: 320 }
-    ],
-    todayExpenses: [
-      { currency: 'EGP', amount: 5230 },
-      { currency: 'USD', amount: 125 }
-    ],
-    monthlyIncome: [
-      { currency: 'EGP', amount: 342150 },
-      { currency: 'USD', amount: 12840 },
-      { currency: 'EUR', amount: 6580 }
-    ],
-    monthlyExpenses: [
-      { currency: 'EGP', amount: 156230 },
-      { currency: 'USD', amount: 4230 }
-    ],
-    yearlyIncome: [
-      { currency: 'EGP', amount: 2847500 },
-      { currency: 'USD', amount: 95200 },
-      { currency: 'EUR', amount: 45800 }
-    ],
-    yearlyExpenses: [
-      { currency: 'EGP', amount: 1245800 },
-      { currency: 'USD', amount: 38400 }
-    ],
-    recentTransactions: []
-  });
+  const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
+  const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
-  const [recentTransactions] = useState<Transaction[]>([
-    {
-      id: '1',
-      type: 'income',
-      category: 'Dive Courses',
-      subcategory: 'Open Water',
-      amount: 2400,
-      currency: 'EGP',
-      paymentMethod: 'cash',
-      status: 'paid',
-      description: 'Open Water Certification - 2 students',
-      date: new Date(),
-      createdBy: 'Office'
-    },
-    {
-      id: '2',
-      type: 'expense',
-      category: 'Equipment',
-      subcategory: 'Tank Filling',
-      amount: 150,
-      currency: 'EGP',
-      paymentMethod: 'cash',
-      status: 'paid',
-      description: 'Nitrox tank filling - 10 tanks',
-      date: new Date(Date.now() - 3600000),
-      createdBy: 'Office'
-    },
-    {
-      id: '3',
-      type: 'income',
-      category: 'Equipment Rental',
-      subcategory: 'Full Gear',
-      amount: 85,
-      currency: 'USD',
-      paymentMethod: 'credit_card',
-      status: 'paid',
-      description: 'Full gear rental - 3 days',
-      date: new Date(Date.now() - 7200000),
-      createdBy: 'Office'
+  useEffect(() => {
+    loadDashboardData();
+  }, []);
+
+  const loadDashboardData = () => {
+    try {
+      const dashboardMetrics = transactionService.getDashboardMetrics();
+      setMetrics(dashboardMetrics);
+    } catch (error) {
+      console.error('Error loading dashboard data:', error);
+    } finally {
+      setLoading(false);
     }
-  ]);
+  };
+
+  const handleQuickAction = (action: string) => {
+    switch (action) {
+      case 'add-income':
+        navigate('/income');
+        break;
+      case 'add-expense':
+        navigate('/expenses');
+        break;
+      case 'view-reports':
+        navigate('/reports');
+        break;
+      case 'all-transactions':
+        navigate('/transactions');
+        break;
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-96">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600 mb-4"></div>
+          <p className="text-gray-600">Loading dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!metrics) {
+    return (
+      <div className="text-center py-8 text-gray-500">
+        Failed to load dashboard data. Please try again.
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -130,34 +115,40 @@ const Dashboard: React.FC = () => {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {recentTransactions.map((transaction) => (
-                <div key={transaction.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                  <div className="flex-1">
-                    <div className="flex items-center space-x-2">
-                      <span className={`w-3 h-3 rounded-full ${
-                        transaction.type === 'income' ? 'bg-green-500' : 'bg-red-500'
-                      }`} />
-                      <span className="font-medium text-gray-800">
-                        {transaction.category}
-                      </span>
-                    </div>
-                    <p className="text-sm text-gray-600 mt-1">
-                      {transaction.description}
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <div className={`font-bold ${
-                      transaction.type === 'income' ? 'text-green-600' : 'text-red-600'
-                    }`}>
-                      {transaction.type === 'income' ? '+' : '-'}
-                      {transaction.amount} {transaction.currency}
-                    </div>
-                    <div className="text-xs text-gray-500">
-                      {transaction.date.toLocaleTimeString()}
-                    </div>
-                  </div>
+              {metrics.recentTransactions.length === 0 ? (
+                <div className="text-center py-4 text-gray-500">
+                  No recent transactions
                 </div>
-              ))}
+              ) : (
+                metrics.recentTransactions.slice(0, 5).map((transaction) => (
+                  <div key={transaction.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-2">
+                        <span className={`w-3 h-3 rounded-full ${
+                          transaction.type === 'income' ? 'bg-green-500' : 'bg-red-500'
+                        }`} />
+                        <span className="font-medium text-gray-800">
+                          {transaction.category}
+                        </span>
+                      </div>
+                      <p className="text-sm text-gray-600 mt-1">
+                        {transaction.description}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <div className={`font-bold ${
+                        transaction.type === 'income' ? 'text-green-600' : 'text-red-600'
+                      }`}>
+                        {transaction.type === 'income' ? '+' : '-'}
+                        {transaction.amount} {transaction.currency}
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        {transaction.date.toLocaleTimeString()}
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </CardContent>
         </Card>
@@ -172,22 +163,38 @@ const Dashboard: React.FC = () => {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 gap-4">
-              <button className="p-4 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors text-center">
-                <div className="text-2xl mb-2">💰</div>
+              <Button
+                variant="outline"
+                className="p-4 h-auto flex flex-col items-center space-y-2 bg-blue-50 hover:bg-blue-100 border-blue-200"
+                onClick={() => handleQuickAction('add-income')}
+              >
+                <div className="text-2xl">💰</div>
                 <div className="text-sm font-medium text-blue-700">Add Income</div>
-              </button>
-              <button className="p-4 bg-red-50 hover:bg-red-100 rounded-lg transition-colors text-center">
-                <div className="text-2xl mb-2">💸</div>
+              </Button>
+              <Button
+                variant="outline"
+                className="p-4 h-auto flex flex-col items-center space-y-2 bg-red-50 hover:bg-red-100 border-red-200"
+                onClick={() => handleQuickAction('add-expense')}
+              >
+                <div className="text-2xl">💸</div>
                 <div className="text-sm font-medium text-red-700">Add Expense</div>
-              </button>
-              <button className="p-4 bg-green-50 hover:bg-green-100 rounded-lg transition-colors text-center">
-                <div className="text-2xl mb-2">📊</div>
+              </Button>
+              <Button
+                variant="outline"
+                className="p-4 h-auto flex flex-col items-center space-y-2 bg-green-50 hover:bg-green-100 border-green-200"
+                onClick={() => handleQuickAction('view-reports')}
+              >
+                <div className="text-2xl">📊</div>
                 <div className="text-sm font-medium text-green-700">View Reports</div>
-              </button>
-              <button className="p-4 bg-purple-50 hover:bg-purple-100 rounded-lg transition-colors text-center">
-                <div className="text-2xl mb-2">📋</div>
+              </Button>
+              <Button
+                variant="outline"
+                className="p-4 h-auto flex flex-col items-center space-y-2 bg-purple-50 hover:bg-purple-100 border-purple-200"
+                onClick={() => handleQuickAction('all-transactions')}
+              >
+                <div className="text-2xl">📋</div>
                 <div className="text-sm font-medium text-purple-700">All Transactions</div>
-              </button>
+              </Button>
             </div>
           </CardContent>
         </Card>
