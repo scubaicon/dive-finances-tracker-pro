@@ -39,7 +39,7 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ transaction, onSubmit
   const categories = formData.type === 'income' ? incomeCategories : expenseCategories;
   const selectedCategory = categories.find(c => c.name === formData.category);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!formData.category || !formData.amount || !formData.description) {
@@ -55,12 +55,16 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ transaction, onSubmit
       let result: Transaction;
       
       if (transaction) {
-        result = transactionService.updateTransaction(transaction.id, {
+        result = await transactionService.updateTransaction(transaction.id, {
           ...formData,
           createdBy: user?.username || 'Unknown'
-        })!;
+        });
+        
+        if (!result) {
+          throw new Error('Failed to update transaction');
+        }
       } else {
-        result = transactionService.addTransaction({
+        result = await transactionService.addTransaction({
           ...formData,
           createdBy: user?.username || 'Unknown'
         });

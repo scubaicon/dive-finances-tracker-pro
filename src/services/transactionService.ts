@@ -1,92 +1,109 @@
 
 import { Transaction, DashboardMetrics, CurrencyAmount } from '@/types';
 
-// Mock data storage - in real app this would be connected to a database
-let transactions: Transaction[] = [
-  {
-    id: '1',
-    type: 'income',
-    category: 'Dive Courses',
-    subcategory: 'Open Water',
-    amount: 2400,
-    currency: 'EGP',
-    paymentMethod: 'cash',
-    status: 'paid',
-    description: 'Open Water Certification - 2 students',
-    date: new Date(),
-    createdBy: 'Office'
-  },
-  {
-    id: '2',
-    type: 'expense',
-    category: 'Equipment',
-    subcategory: 'Tank Filling',
-    amount: 150,
-    currency: 'EGP',
-    paymentMethod: 'cash',
-    status: 'paid',
-    description: 'Nitrox tank filling - 10 tanks',
-    date: new Date(Date.now() - 3600000),
-    createdBy: 'Office'
-  },
-  {
-    id: '3',
-    type: 'income',
-    category: 'Equipment Rental',
-    subcategory: 'Full Gear',
-    amount: 85,
-    currency: 'USD',
-    paymentMethod: 'credit_card',
-    status: 'paid',
-    description: 'Full gear rental - 3 days',
-    date: new Date(Date.now() - 7200000),
-    createdBy: 'Office'
-  }
-];
+const API_BASE_URL = 'http://localhost/dive_center/api';
 
 export const transactionService = {
   // Get all transactions
-  getAllTransactions: (): Transaction[] => {
-    return transactions.sort((a, b) => b.date.getTime() - a.date.getTime());
+  getAllTransactions: async (): Promise<Transaction[]> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/transactions/`);
+      const data = await response.json();
+      
+      return data.map((t: any) => ({
+        ...t,
+        date: new Date(t.date)
+      })) as Transaction[];
+    } catch (error) {
+      console.error('Error fetching transactions:', error);
+      return [];
+    }
   },
 
   // Add new transaction
-  addTransaction: (transaction: Omit<Transaction, 'id'>): Transaction => {
-    const newTransaction: Transaction = {
-      ...transaction,
-      id: Date.now().toString()
-    };
-    transactions.push(newTransaction);
-    return newTransaction;
+  addTransaction: async (transaction: Omit<Transaction, 'id'>): Promise<Transaction> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/transactions/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ...transaction,
+          date: transaction.date.toISOString().slice(0, 19).replace('T', ' ')
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to create transaction');
+      }
+
+      // Fetch updated list to get the created transaction
+      const transactions = await this.getAllTransactions();
+      return transactions[0] as Transaction; // Return the most recent transaction
+    } catch (error) {
+      console.error('Error creating transaction:', error);
+      throw error;
+    }
   },
 
   // Update transaction
-  updateTransaction: (id: string, updates: Partial<Transaction>): Transaction | null => {
-    const index = transactions.findIndex(t => t.id === id);
-    if (index === -1) return null;
-    
-    transactions[index] = { ...transactions[index], ...updates };
-    return transactions[index];
+  updateTransaction: async (id: string, updates: Partial<Transaction>): Promise<Transaction | null> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/transactions/`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          id,
+          ...updates,
+          date: updates.date ? updates.date.toISOString().slice(0, 19).replace('T', ' ') : undefined
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update transaction');
+      }
+
+      // Fetch updated transaction
+      const transactions = await this.getAllTransactions();
+      return transactions.find(t => t.id.toString() === id.toString()) || null;
+    } catch (error) {
+      console.error('Error updating transaction:', error);
+      return null;
+    }
   },
 
   // Delete transaction
-  deleteTransaction: (id: string): boolean => {
-    const index = transactions.findIndex(t => t.id === id);
-    if (index === -1) return false;
-    
-    transactions.splice(index, 1);
-    return true;
+  deleteTransaction: async (id: string): Promise<boolean> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/transactions/`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ id }),
+      });
+
+      return response.ok;
+    } catch (error) {
+      console.error('Error deleting transaction:', error);
+      return false;
+    }
   },
 
   // Get transactions by date range
-  getTransactionsByDateRange: (startDate: Date, endDate: Date): Transaction[] => {
+  getTransactionsByDateRange: async (startDate: Date, endDate: Date): Promise<Transaction[]> => {
+    const transactions = await this.getAllTransactions();
     return transactions.filter(t => 
       t.date >= startDate && t.date <= endDate
     ).sort((a, b) => b.date.getTime() - a.date.getTime());
   },
 
   // Get dashboard metrics
-  getDashboardMetrics: (): DashboardMetrics => {
+  getDashboardMetrics: async (): Promise<DashboardMetrics> => {
+    const transactions = await this.getAllTransactions();
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);

@@ -16,9 +16,9 @@ const Dashboard: React.FC = () => {
     loadDashboardData();
   }, []);
 
-  const loadDashboardData = () => {
+  const loadDashboardData = async () => {
     try {
-      const dashboardMetrics = transactionService.getDashboardMetrics();
+      const dashboardMetrics = await transactionService.getDashboardMetrics();
       setMetrics(dashboardMetrics);
     } catch (error) {
       console.error('Error loading dashboard data:', error);

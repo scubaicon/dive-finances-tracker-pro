@@ -18,8 +18,8 @@ const Income: React.FC = () => {
     loadTransactions();
   }, []);
 
-  const loadTransactions = () => {
-    const allTransactions = transactionService.getAllTransactions();
+  const loadTransactions = async () => {
+    const allTransactions = await transactionService.getAllTransactions();
     setTransactions(allTransactions.filter(t => t.type === 'income'));
   };
 
@@ -33,14 +33,22 @@ const Income: React.FC = () => {
     setShowForm(true);
   };
 
-  const handleDeleteTransaction = (id: string) => {
+  const handleDeleteTransaction = async (id: string) => {
     if (window.confirm('Are you sure you want to delete this transaction?')) {
-      transactionService.deleteTransaction(id);
-      loadTransactions();
-      toast({
-        title: "Success",
-        description: "Transaction deleted successfully"
-      });
+      const success = await transactionService.deleteTransaction(id);
+      if (success) {
+        loadTransactions();
+        toast({
+          title: "Success",
+          description: "Transaction deleted successfully"
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to delete transaction",
+          variant: "destructive"
+        });
+      }
     }
   };
 

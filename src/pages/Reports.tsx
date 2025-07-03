@@ -17,14 +17,14 @@ const Reports: React.FC = () => {
     loadReportData();
   }, [reportType, startDate, endDate]);
 
-  const loadReportData = () => {
+  const loadReportData = async () => {
     setLoading(true);
     try {
       const start = new Date(startDate);
       const end = new Date(endDate);
       end.setHours(23, 59, 59, 999);
       
-      const data = transactionService.getTransactionsByDateRange(start, end);
+      const data = await transactionService.getTransactionsByDateRange(start, end);
       setTransactions(data);
     } catch (error) {
       console.error('Error loading report data:', error);

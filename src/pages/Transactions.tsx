@@ -17,9 +17,12 @@ const Transactions: React.FC = () => {
   const [currencyFilter, setCurrencyFilter] = useState<'all' | 'EGP' | 'USD' | 'EUR' | 'GBP' | 'VISA'>('all');
 
   useEffect(() => {
-    const allTransactions = transactionService.getAllTransactions();
-    setTransactions(allTransactions);
-    setFilteredTransactions(allTransactions);
+    const loadTransactions = async () => {
+      const allTransactions = await transactionService.getAllTransactions();
+      setTransactions(allTransactions);
+      setFilteredTransactions(allTransactions);
+    };
+    loadTransactions();
   }, []);
 
   useEffect(() => {
