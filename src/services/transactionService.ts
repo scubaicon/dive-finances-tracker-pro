@@ -10,6 +10,11 @@ export const transactionService = {
       const response = await fetch(`${API_BASE_URL}/transactions/`);
       const data = await response.json();
       
+      if (!Array.isArray(data)) {
+        console.error('Invalid response format:', data);
+        return [];
+      }
+      
       return data.map((t: any) => ({
         ...t,
         date: new Date(t.date)
@@ -39,7 +44,10 @@ export const transactionService = {
       }
 
       // Fetch updated list to get the created transaction
-      const transactions = await this.getAllTransactions();
+      const transactions = await transactionService.getAllTransactions();
+      if (transactions.length === 0) {
+        throw new Error('Failed to retrieve created transaction');
+      }
       return transactions[0] as Transaction; // Return the most recent transaction
     } catch (error) {
       console.error('Error creating transaction:', error);
@@ -67,7 +75,7 @@ export const transactionService = {
       }
 
       // Fetch updated transaction
-      const transactions = await this.getAllTransactions();
+      const transactions = await transactionService.getAllTransactions();
       return transactions.find(t => t.id.toString() === id.toString()) || null;
     } catch (error) {
       console.error('Error updating transaction:', error);
@@ -95,7 +103,7 @@ export const transactionService = {
 
   // Get transactions by date range
   getTransactionsByDateRange: async (startDate: Date, endDate: Date): Promise<Transaction[]> => {
-    const transactions = await this.getAllTransactions();
+    const transactions = await transactionService.getAllTransactions();
     return transactions.filter(t => 
       t.date >= startDate && t.date <= endDate
     ).sort((a, b) => b.date.getTime() - a.date.getTime());
@@ -103,7 +111,7 @@ export const transactionService = {
 
   // Get dashboard metrics
   getDashboardMetrics: async (): Promise<DashboardMetrics> => {
-    const transactions = await this.getAllTransactions();
+    const transactions = await transactionService.getAllTransactions();
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
